@@ -318,7 +318,7 @@
                     <p class="font-bold text-[13px] flex items-center gap-2"><span class="w-7 h-7 rounded-lg btn-primary flex items-center justify-center text-[12px]">B</span> Jendela terpisah / embed</p>
                     <div class="flex flex-wrap gap-2 mt-3">
                         <button onclick="detachWindow()" class="px-4 py-2.5 rounded-xl btn-primary text-[12px] font-bold"><i class="fa-solid fa-up-right-from-square mr-1"></i> Logo di jendela baru</button>
-                        <button onclick="openTabBaru()" class="px-4 py-2.5 rounded-xl bg-white/[.06] hover:bg-white/[.1] border border-white/15 text-[12px] font-bold transition"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Buka di tab baru</button>
+                        <a href="?embed=1" target="_blank" rel="noopener" class="px-4 py-2.5 rounded-xl bg-white/[.06] hover:bg-white/[.1] border border-white/15 text-[12px] font-bold transition"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Buka di tab baru</a>
                         <button onclick="copyWidgetCode()" class="px-4 py-2.5 rounded-xl bg-white/[.06] hover:bg-white/[.1] border border-white/15 text-[12px] font-bold transition"><i class="fa-solid fa-code mr-1"></i> Salin kode embed</button>
                     </div>
                     <p class="text-[11px] text-slate-500 mt-2.5 leading-relaxed">Tempel kode embed di console (F12) halaman soal, atau simpan sebagai bookmarklet manual. Key 🔑 tetap per-browser.</p>
@@ -510,12 +510,14 @@
         function detachWindow() {
             // Buka tab/jendela baru langsung dalam mode AI (embed) — logo dipencet → AI keluar
             const base = window.location.href.split('?')[0];
-            window.open(base + '?embed=1', 'AIStudyAssistantWindow', 'width=440,height=680,resizable=yes,scrollbars=yes,status=no');
+            const w = window.open(base + '?embed=1', 'AIStudyAssistantWindow', 'width=440,height=680,resizable=yes,scrollbars=yes,status=no');
+            if (!w) showToast('Popup diblokir browser — izinkan popup untuk situs ini, atau pakai Buka di tab baru');
         }
 
         function openTabBaru() {
             const base = window.location.href.split('?')[0];
-            window.open(base + '?embed=1', '_blank');
+            const w = window.open(base + '?embed=1', '_blank', 'noopener');
+            if (!w) showToast('Popup diblokir browser — izinkan popup untuk situs ini');
         }
 
         // ===== API KEY (localStorage, awet walau desain diubah) =====
