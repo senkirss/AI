@@ -317,7 +317,8 @@
                 <div class="rounded-2xl bg-black/30 border border-white/10 p-4">
                     <p class="font-bold text-[13px] flex items-center gap-2"><span class="w-7 h-7 rounded-lg btn-primary flex items-center justify-center text-[12px]">B</span> Jendela terpisah / embed</p>
                     <div class="flex flex-wrap gap-2 mt-3">
-                        <button onclick="detachWindow()" class="px-4 py-2.5 rounded-xl btn-primary text-[12px] font-bold"><i class="fa-solid fa-up-right-from-square mr-1"></i> Buka jendela terpisah</button>
+                        <button onclick="detachWindow()" class="px-4 py-2.5 rounded-xl btn-primary text-[12px] font-bold"><i class="fa-solid fa-up-right-from-square mr-1"></i> Logo di jendela baru</button>
+                        <button onclick="openTabBaru()" class="px-4 py-2.5 rounded-xl bg-white/[.06] hover:bg-white/[.1] border border-white/15 text-[12px] font-bold transition"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Buka di tab baru</button>
                         <button onclick="copyWidgetCode()" class="px-4 py-2.5 rounded-xl bg-white/[.06] hover:bg-white/[.1] border border-white/15 text-[12px] font-bold transition"><i class="fa-solid fa-code mr-1"></i> Salin kode embed</button>
                     </div>
                     <p class="text-[11px] text-slate-500 mt-2.5 leading-relaxed">Tempel kode embed di console (F12) halaman soal, atau simpan sebagai bookmarklet manual. Key 🔑 tetap per-browser.</p>
@@ -335,10 +336,10 @@
             Hai! Butuh bantuan soal? Klik aku 👇
             <button onclick="document.getElementById('fab-tip').style.display='none'" class="text-slate-400 hover:text-slate-700 ml-1"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <button id="floating-btn" onclick="togglePopup()" aria-label="Buka AI Assistant" class="relative group w-[62px] h-[62px] rounded-full btn-primary flex items-center justify-center text-[22px]">
-            <span class="absolute inset-0 rounded-full bg-violet-500" style="animation: pulseRing 2s ease-out infinite"></span>
-            <span class="absolute inset-0 rounded-full bg-violet-500/60" style="animation: pulseRing 2s ease-out infinite; animation-delay:1s"></span>
-            <span id="fab-icon-open" class="relative"><i class="fa-solid fa-robot"></i></span>
+        <button id="floating-btn" onclick="togglePopup()" aria-label="Buka AI Assistant" title="Akutansi AI — klik untuk buka/tutup" class="relative group w-[64px] h-[64px] rounded-[20px] btn-primary flex items-center justify-center text-[24px]">
+            <span class="absolute inset-0 rounded-[20px] bg-violet-500" style="animation: pulseRing 2s ease-out infinite"></span>
+            <span class="absolute inset-0 rounded-[20px] bg-violet-500/60" style="animation: pulseRing 2s ease-out infinite; animation-delay:1s"></span>
+            <span id="fab-icon-open" class="relative flex flex-col items-center leading-none"><i class="fa-solid fa-graduation-cap"></i><span class="text-[8px] font-extrabold tracking-widest mt-0.5">AI</span></span>
             <span id="fab-icon-close" class="relative hidden"><i class="fa-solid fa-xmark"></i></span>
             <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-400 border-[3px] border-[#020218]"></span>
         </button>
@@ -507,7 +508,14 @@
         });
 
         function detachWindow() {
-            window.open(window.location.href, 'AIStudyAssistantWindow', 'width=440,height=680,resizable=yes,scrollbars=yes,status=no');
+            // Buka tab/jendela baru langsung dalam mode AI (embed) — logo dipencet → AI keluar
+            const base = window.location.href.split('?')[0];
+            window.open(base + '?embed=1', 'AIStudyAssistantWindow', 'width=440,height=680,resizable=yes,scrollbars=yes,status=no');
+        }
+
+        function openTabBaru() {
+            const base = window.location.href.split('?')[0];
+            window.open(base + '?embed=1', '_blank');
         }
 
         // ===== API KEY (localStorage, awet walau desain diubah) =====
@@ -801,13 +809,15 @@
             navigator.clipboard.writeText(code).then(() => showToast('Kode embed disalin ✓ Tempel di console/F12')).catch(() => showToast('Gagal menyalin'));
         }
 
-        // Mode embed (?embed=1): dipakai di dalam iframe widget.js di halaman lain
+        // Mode embed (?embed=1): tab/jendela baru khusus AI — logo dipencet → AI keluar
         (function () {
             try {
                 if (new URLSearchParams(location.search).get('embed') === '1') {
                     document.querySelectorAll('nav, main, #fitur, #cara').forEach(el => el.style.display = 'none');
                     document.body.style.background = '#06052d';
                     document.body.style.minHeight = '100vh';
+                    var tip = document.getElementById('fab-tip');
+                    if (tip) tip.style.display = 'none';
                     togglePopup(true);
                 }
             } catch(e) {}
