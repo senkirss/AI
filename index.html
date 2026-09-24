@@ -127,6 +127,18 @@
         }
         .app-mode #popup-window:not(.hidden) { animation: fadeUp .4s cubic-bezier(.22,1,.36,1) both; }
 
+        /* HP: popup fullscreen di bawah bar, catatan bawah disembunyikan */
+        @media (max-width: 640px) {
+            .app-mode #popup-window {
+                left: 0; right: 0; top: 53px; bottom: 0;
+                transform: none; width: auto; height: auto; max-height: none;
+                border-radius: 0; border-left: none; border-right: none; border-bottom: none;
+            }
+            .app-mode #app-foot { display: none; }
+            #app-bar { padding-left: 12px; padding-right: 12px; }
+            #chat-container { padding: 12px; }
+        }
+
         #toast { transition: all .35s cubic-bezier(.22,1,.36,1); }
 
         /* Bar & catatan mode aplikasi (disembunyikan bila landing tampil) */
@@ -363,7 +375,7 @@
     </section>
 
     <!-- ===== FLOATING BUTTON ===== -->
-    <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+    <div id="fab-wrap" class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
         <div id="fab-tip" class="anim-pop mr-1 px-3 py-2 rounded-2xl rounded-br-md bg-white text-slate-900 text-[12px] font-semibold shadow-card flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             Hai! Butuh bantuan soal? Klik aku 👇
@@ -541,6 +553,12 @@
             }
             document.getElementById('fab-icon-open').classList.toggle('hidden', shouldOpen);
             document.getElementById('fab-icon-close').classList.toggle('hidden', !shouldOpen);
+            // HP mode aplikasi: sembunyikan tombol logo saat popup fullscreen biar tidak menutupi input
+            var fab = document.getElementById('fab-wrap');
+            if (fab) {
+                if (shouldOpen && window.innerWidth < 640 && document.body.classList.contains('app-mode')) fab.style.display = 'none';
+                else fab.style.display = '';
+            }
         }
 
         document.addEventListener('keydown', (e) => {
