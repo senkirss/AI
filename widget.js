@@ -12,7 +12,7 @@
   btn.id = "akutansi-widget-btn";
   btn.title = "Akutansi AI — klik untuk buka/tutup";
   btn.innerHTML = "🎓";
-  btn.style.cssText = "position:fixed;bottom:22px;right:22px;z-index:2147483646;width:60px;height:60px;border-radius:18px;border:1px solid rgba(255,255,255,.35);background:linear-gradient(135deg,#4F46E5,#7C3AED 55%,#0891b2 130%);color:#fff;font-size:26px;cursor:pointer;box-shadow:0 12px 32px -10px rgba(124,58,237,.65);";
+  btn.style.cssText = "position:fixed;bottom:22px;right:22px;z-index:2147483646;width:50px;height:50px;border-radius:50%;border:none;background:#fff;color:#4F46E5;font-size:24px;cursor:pointer;box-shadow:0 8px 28px -8px rgba(0,0,0,.5);";
   var frame = document.createElement("iframe");
   frame.id = "akutansi-widget-frame";
   frame.src = "https://senkirss.github.io/AI/?embed=1";

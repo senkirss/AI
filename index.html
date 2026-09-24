@@ -336,12 +336,10 @@
             Hai! Butuh bantuan soal? Klik aku 👇
             <button onclick="document.getElementById('fab-tip').style.display='none'" class="text-slate-400 hover:text-slate-700 ml-1"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <button id="floating-btn" onclick="togglePopup()" aria-label="Buka AI Assistant" title="Akutansi AI — klik untuk buka/tutup" class="relative group w-[64px] h-[64px] rounded-[20px] btn-primary flex items-center justify-center text-[24px]">
-            <span class="absolute inset-0 rounded-[20px] bg-violet-500" style="animation: pulseRing 2s ease-out infinite"></span>
-            <span class="absolute inset-0 rounded-[20px] bg-violet-500/60" style="animation: pulseRing 2s ease-out infinite; animation-delay:1s"></span>
-            <span id="fab-icon-open" class="relative flex flex-col items-center leading-none"><i class="fa-solid fa-graduation-cap"></i><span class="text-[8px] font-extrabold tracking-widest mt-0.5">AI</span></span>
-            <span id="fab-icon-close" class="relative hidden"><i class="fa-solid fa-xmark"></i></span>
-            <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-400 border-[3px] border-[#020218]"></span>
+        <button id="floating-btn" onclick="togglePopup()" aria-label="Buka AI Assistant" title="Akutansi AI — klik untuk buka/tutup" class="relative w-[52px] h-[52px] rounded-full bg-white hover:scale-105 active:scale-95 transition flex items-center justify-center shadow-card animate-float">
+            <span id="fab-icon-open" class="leading-none text-[26px]"><span class="bg-gradient-to-br from-indigo-600 via-violet-600 to-cyan-600 bg-clip-text text-transparent"><i class="fa-solid fa-graduation-cap"></i></span></span>
+            <span id="fab-icon-close" class="hidden leading-none text-slate-700 text-[20px]"><i class="fa-solid fa-xmark"></i></span>
+            <span class="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-white"></span>
         </button>
     </div>
 
