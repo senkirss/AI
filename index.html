@@ -118,6 +118,15 @@
         #popup-window { transform-origin: bottom right; }
         #popup-window:not(.hidden) { animation: popIn .32s cubic-bezier(.22,1,.36,1) both; }
 
+        /* Mode aplikasi: hanya popup, landing disembunyikan */
+        .app-mode #popup-window {
+            left: 50%; right: auto; top: 50%; bottom: auto;
+            transform: translate(-50%, -50%);
+            width: min(480px, 94vw); height: min(720px, 92vh); max-height: 92vh;
+            transform-origin: center;
+        }
+        .app-mode #popup-window:not(.hidden) { animation: fadeUp .4s cubic-bezier(.22,1,.36,1) both; }
+
         #toast { transition: all .35s cubic-bezier(.22,1,.36,1); }
     </style>
 </head>
@@ -809,17 +818,15 @@
             navigator.clipboard.writeText(code).then(() => showToast('Kode embed disalin ✓ Tempel di console/F12')).catch(() => showToast('Gagal menyalin'));
         }
 
-        // Mode embed (?embed=1): tab/jendela baru khusus AI — logo dipencet → AI keluar
+        // Mode aplikasi: web hanya menampilkan popup AI (landing disembunyikan).
+        // Widget halaman lain tetap pakai ?embed=1 (hasil sama: popup langsung terbuka).
         (function () {
             try {
-                if (new URLSearchParams(location.search).get('embed') === '1') {
-                    document.querySelectorAll('nav, main, #fitur, #cara').forEach(el => el.style.display = 'none');
-                    document.body.style.background = '#06052d';
-                    document.body.style.minHeight = '100vh';
-                    var tip = document.getElementById('fab-tip');
-                    if (tip) tip.style.display = 'none';
-                    togglePopup(true);
-                }
+                document.body.classList.add('app-mode');
+                document.querySelectorAll('nav, main, #fitur, #cara').forEach(el => el.style.display = 'none');
+                var tip = document.getElementById('fab-tip');
+                if (tip) tip.style.display = 'none';
+                togglePopup(true);
             } catch(e) {}
         })();
 
