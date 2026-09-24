@@ -736,8 +736,10 @@
                 if (!done) {
                     document.getElementById(typingId)?.remove();
                     console.error(lastErr);
-                    const retryHint = (lastStatus === 503 || lastStatus === 429 || lastStatus === 500) ? 'Server Google sedang penuh — otomatis dicoba 4 model, coba lagi 1-2 menit.' : 'Jika 401/403, buat key baru di AI Studio / cek restriksi.';
-                    container.innerHTML += `<div class="anim-pop rounded-2xl bg-rose-500/10 border border-rose-400/25 p-3 text-rose-200 text-[12px]">⚠️ API Error (${lastStatus}): ${escapeHtml(String(lastErr).slice(0,400))}<br><span class="text-[11px] text-rose-300/70">${retryHint}</span></div>`;
+                    const needKey = (lastStatus === 401 && !getApiKey());
+                    const retryHint = needKey ? 'Klik ikon 🔑 di header chat, tempel key AQ.* kamu, Simpan, lalu Kirim lagi.' : ((lastStatus === 503 || lastStatus === 429 || lastStatus === 500) ? 'Server Google sedang penuh — otomatis dicoba 4 model, coba lagi 1-2 menit.' : 'Jika 401/403, buat key baru di AI Studio / cek restriksi.');
+                    container.innerHTML += `<div class="anim-pop rounded-2xl bg-rose-500/10 border border-rose-400/25 p-3 text-rose-200 text-[12px]">⚠️ API Error (${lastStatus}): ${escapeHtml(String(lastErr).slice(0,400))}<br><span class="text-[11px] text-rose-300/70">${retryHint}</span>${needKey ? `<br><button onclick="openApiModal()" class="mt-2 text-[11px] font-bold px-3 py-1.5 rounded-xl btn-primary">🔑 Isi API Key Sekarang</button>` : ''}</div>`;
+                    if (needKey) openApiModal();
                 }
             } catch (error) {
                 console.error(error);
