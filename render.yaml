@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: akutansi-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGIN
+        value: https://senkirss.github.io
