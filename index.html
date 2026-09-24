@@ -300,6 +300,30 @@
                 <p class="text-[12px] text-slate-300">Klik ikon <b>🔑</b> di header chat untuk tempel <b>Gemini API Key gratis</b> dari <span class="text-cyan-300 font-semibold">aistudio.google.com</span> — otomatis tersimpan di browser, tidak hilang saat desain diubah.</p>
             </div>
         </div>
+        <!-- Popup di halaman lain -->
+        <div id="popup-luar" class="rounded-[28px] border border-white/10 bg-gradient-to-b from-white/[.06] to-white/[.02] backdrop-blur p-6 sm:p-8 relative overflow-hidden mt-4">
+            <p class="text-[11px] font-bold tracking-[.2em] text-violet-300">POP-UP DI HALAMAN LAIN</p>
+            <h2 class="font-display font-extrabold text-xl sm:text-2xl mt-1.5 tracking-tight">Pakai asisten di tab ujian / web lain</h2>
+            <p class="text-[12.5px] text-slate-400 mt-2 leading-relaxed max-w-2xl">Popup bawaan browser hanya hidup di web ini. Untuk memakainya di halaman lain (tab soal, LMS, PDF online), pakai salah satu cara ini — tanpa install extension:</p>
+            <div class="grid sm:grid-cols-2 gap-4 mt-5">
+                <div class="rounded-2xl bg-black/30 border border-white/10 p-4">
+                    <p class="font-bold text-[13px] flex items-center gap-2"><span class="w-7 h-7 rounded-lg btn-primary flex items-center justify-center text-[12px]">A</span> Bookmarklet (1 klik)</p>
+                    <ol class="text-[12px] text-slate-400 mt-2 space-y-1 list-decimal list-inside leading-relaxed">
+                        <li>Tampilkan bookmark bar (Ctrl+Shift+B)</li>
+                        <li>Drag tombol ini ke bookmark bar: <a id="bookmarklet-link" href="javascript:(function(){var s=document.createElement('script');s.src='https://senkirss.github.io/AI/widget.js';document.body.appendChild(s);})();" class="inline-block px-3 py-1.5 rounded-xl btn-primary text-white text-[12px] font-bold no-underline">🤖 Akutansi AI</a></li>
+                        <li>Buka halaman soal → klik bookmark itu → popup muncul di pojok kanan</li>
+                    </ol>
+                </div>
+                <div class="rounded-2xl bg-black/30 border border-white/10 p-4">
+                    <p class="font-bold text-[13px] flex items-center gap-2"><span class="w-7 h-7 rounded-lg btn-primary flex items-center justify-center text-[12px]">B</span> Jendela terpisah / embed</p>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <button onclick="detachWindow()" class="px-4 py-2.5 rounded-xl btn-primary text-[12px] font-bold"><i class="fa-solid fa-up-right-from-square mr-1"></i> Buka jendela terpisah</button>
+                        <button onclick="copyWidgetCode()" class="px-4 py-2.5 rounded-xl bg-white/[.06] hover:bg-white/[.1] border border-white/15 text-[12px] font-bold transition"><i class="fa-solid fa-code mr-1"></i> Salin kode embed</button>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-2.5 leading-relaxed">Tempel kode embed di console (F12) halaman soal, atau simpan sebagai bookmarklet manual. Key 🔑 tetap per-browser.</p>
+                </div>
+            </div>
+        </div>
         <p class="text-center text-[11px] text-slate-600 mt-8">© 2026 Akutansi · Dibuat untuk membantu belajar lebih cepat ✨</p>
         <div class="h-24"></div>
     </section>
@@ -769,6 +793,23 @@
         function escapeHtml(text) {
             return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
+
+        function copyWidgetCode() {
+            const code = `(function(){var s=document.createElement('script');s.src='https://senkirss.github.io/AI/widget.js';document.body.appendChild(s);})();`;
+            navigator.clipboard.writeText(code).then(() => showToast('Kode embed disalin ✓ Tempel di console/F12')).catch(() => showToast('Gagal menyalin'));
+        }
+
+        // Mode embed (?embed=1): dipakai di dalam iframe widget.js di halaman lain
+        (function () {
+            try {
+                if (new URLSearchParams(location.search).get('embed') === '1') {
+                    document.querySelectorAll('nav, main, #fitur, #cara').forEach(el => el.style.display = 'none');
+                    document.body.style.background = '#06052d';
+                    document.body.style.minHeight = '100vh';
+                    togglePopup(true);
+                }
+            } catch(e) {}
+        })();
 
         // Enter untuk kirim, Shift+Enter baris baru
         document.getElementById('prompt_user').addEventListener('keydown', (e) => {
