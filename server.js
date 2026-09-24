@@ -57,7 +57,7 @@ app.post("/api/chat", async (req, res) => {
       }
       lastErr = j?.error?.message || `HTTP ${r.status}`;
       lastStatus = r.status;
-      if ([400, 401, 403].includes(r.status)) break; // key salah -> stop
+      if ([400, 401, 403, 429].includes(r.status)) break; // hemat kuota: 429 langsung stop
     }
     return res.status(lastStatus).json({ error: lastErr });
   } catch (e) {

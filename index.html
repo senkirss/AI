@@ -871,8 +871,8 @@
                         }
                         lastErr = result?.error?.message || ('HTTP ' + status);
                         lastStatus = status;
-                        // 503/500/429/404-model = coba model berikutnya; 400/401/403 = key salah, stop
-                        if (status === 400 || status === 401 || status === 403) break;
+                        // 503/500/404-model = coba model berikutnya; 400/401/403/429 = stop (hemat kuota)
+                        if (status === 400 || status === 401 || status === 403 || status === 429) break;
                     } catch (e) {
                         lastErr = String(e && e.message || e);
                         lastStatus = 0;

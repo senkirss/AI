@@ -47,7 +47,7 @@ export default async function handler(req, res) {
       }
       lastErr = j?.error?.message || `HTTP ${r.status}`;
       lastStatus = r.status;
-      if ([400, 401, 403].includes(r.status)) break;
+      if ([400, 401, 403, 429].includes(r.status)) break; // hemat kuota: 429 langsung stop
     } catch (e) {
       lastErr = String(e?.message || e);
       lastStatus = 0;
