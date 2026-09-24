@@ -1,5 +1,5 @@
 // Vercel Serverless Function — proxy aman Gemini (key di env, tidak di repo)
-const MODELS = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-flash-latest", "gemini-2.5-flash"];
+const MODELS = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.8-flash", "gemini-flash-latest"];
 const hits = new Map();
 
 export default async function handler(req, res) {

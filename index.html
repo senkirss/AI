@@ -797,7 +797,7 @@
             scrollChat();
             document.getElementById('status-text').innerText = 'Mengetik…';
 
-            const MODELS = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-flash-latest", "gemini-2.5-flash"];
+            const MODELS = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-3.8-flash", "gemini-flash-latest"];
             let parts = [];
             let instructionText = `Bertindaklah sebagai asisten akademis ahli dalam subjek (${selectedSubject}). Berikan jawaban terstruktur, ringkas, jelas, gunakan poin/heading dan contoh bila relevan, dalam Bahasa Indonesia. `;
             instructionText += userPrompt ? "\nPertanyaan/Instruksi Tambahan: " + userPrompt : "\nMohon analisis gambar/soal yang terlampir dan berikan jawaban serta langkah penyelesaiannya.";
@@ -883,7 +883,7 @@
                     document.getElementById(typingId)?.remove();
                     console.error(lastErr);
                     const needKey = (lastStatus === 401 && !getApiKey());
-                    const retryHint = needKey ? 'Klik ikon 🔑 di header chat, tempel key AQ.* kamu, Simpan, lalu Kirim lagi.' : ((lastStatus === 503 || lastStatus === 429 || lastStatus === 500) ? 'Server Google sedang penuh — otomatis dicoba 4 model, coba lagi 1-2 menit.' : 'Jika 401/403, buat key baru di AI Studio / cek restriksi.');
+                    const retryHint = needKey ? 'Klik ikon 🔑 di header chat, tempel key AQ.* kamu, Simpan, lalu Kirim lagi.' : ((lastStatus === 503 || lastStatus === 429 || lastStatus === 500) ? 'Server Google sedang penuh — otomatis dicoba 4 model, coba lagi 1-2 menit.' : ((lastStatus === 404) ? 'Model itu pensiun — sudah otomatis dialihkan ke model aktif. Key TIDAK perlu diganti, Kirim lagi saja.' : 'Jika 401/403, buat key baru di AI Studio / cek restriksi. Error lain TIDAK perlu ganti key.'));
                     container.innerHTML += `<div class="anim-pop rounded-2xl bg-rose-500/10 border border-rose-400/25 p-3 text-rose-200 text-[12px]">⚠️ API Error (${lastStatus}): ${escapeHtml(String(lastErr).slice(0,400))}<br><span class="text-[11px] text-rose-300/70">${retryHint}</span>${needKey ? `<br><button onclick="openApiModal()" class="mt-2 text-[11px] font-bold px-3 py-1.5 rounded-xl btn-primary">🔑 Isi API Key Sekarang</button>` : ''}</div>`;
                     if (needKey) openApiModal();
                 }
