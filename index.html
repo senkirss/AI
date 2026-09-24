@@ -476,22 +476,31 @@
         <i class="fa-solid fa-circle-check text-emerald-500"></i><span id="toast-msg">Berhasil</span>
     </div>
 
-    <!-- Modal API Key -->
+    <!-- Modal API Key (terkunci password) -->
     <div id="api-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
         <div class="anim-pop w-full max-w-[380px] rounded-3xl border border-white/15 bg-[#0c0b3d] p-5 shadow-card">
             <div class="flex items-center justify-between mb-1">
                 <h3 class="font-display font-extrabold text-[15px] flex items-center gap-2"><i class="fa-solid fa-key text-amber-300"></i> API Key Gemini</h3>
                 <button onclick="closeApiModal()" class="w-8 h-8 rounded-xl bg-white/[.06] hover:bg-white/[.12] text-slate-300 text-[14px]"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-[12px] text-slate-400 leading-relaxed">Tempel API key dari <b class="text-cyan-300">aistudio.google.com</b> → Get API Key. Key hanya tersimpan di browser ini (localStorage) — cocok untuk GitHub Pages, tidak ikut ke repo.</p>
-            <div id="api-current-wrap" class="mt-3 hidden items-center justify-between gap-2 rounded-xl px-3 py-2 bg-emerald-400/10 border border-emerald-400/25 text-[11.5px]">
-                <span class="text-emerald-200 font-semibold flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i><span id="api-current-text">Key tersimpan ✓</span></span>
-                <button onclick="hapusApiKey()" class="text-rose-300 hover:text-rose-200 font-semibold">Hapus</button>
+            <!-- Kunci password -->
+            <div id="api-lock-wrap">
+                <p class="text-[12px] text-slate-400 leading-relaxed mt-1"><i class="fa-solid fa-lock mr-1 text-amber-300"></i>Area ini dikunci. Masukkan password untuk melihat / mengubah API key.</p>
+                <input id="api-pass-input" type="password" inputmode="numeric" placeholder="Password…" class="mt-3 w-full bg-black/40 border border-white/15 rounded-2xl px-3.5 py-2.5 text-[12.5px] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60">
+                <button onclick="unlockApi()" class="mt-3 w-full btn-primary rounded-2xl py-2.5 text-[12.5px] font-bold"><i class="fa-solid fa-unlock mr-1"></i> Buka Kunci</button>
             </div>
-            <input id="api-input" type="password" placeholder="Tempel AIza… key kamu di sini" class="mt-3 w-full bg-black/40 border border-white/15 rounded-2xl px-3.5 py-2.5 text-[12.5px] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60">
-            <div class="flex gap-2 mt-3">
-                <button onclick="saveApiKey()" class="flex-1 btn-primary rounded-2xl py-2.5 text-[12.5px] font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Key</button>
-                <button onclick="toggleApiShow()" class="px-3.5 rounded-2xl bg-white/[.06] border border-white/12 text-[12px]"><i class="fa-solid fa-eye"></i></button>
+            <!-- Isi key (setelah unlock) -->
+            <div id="api-main-wrap" class="hidden">
+                <p class="text-[12px] text-slate-400 leading-relaxed">Tempel API key dari <b class="text-cyan-300">aistudio.google.com</b> → Get API Key. Key hanya tersimpan di browser ini (localStorage) — cocok untuk GitHub Pages, tidak ikut ke repo.</p>
+                <div id="api-current-wrap" class="mt-3 hidden items-center justify-between gap-2 rounded-xl px-3 py-2 bg-emerald-400/10 border border-emerald-400/25 text-[11.5px]">
+                    <span class="text-emerald-200 font-semibold flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i><span id="api-current-text">Key tersimpan ✓</span></span>
+                    <button onclick="hapusApiKey()" class="text-rose-300 hover:text-rose-200 font-semibold">Hapus</button>
+                </div>
+                <input id="api-input" type="password" placeholder="Tempel key kamu di sini" class="mt-3 w-full bg-black/40 border border-white/15 rounded-2xl px-3.5 py-2.5 text-[12.5px] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60">
+                <div class="flex gap-2 mt-3">
+                    <button onclick="saveApiKey()" class="flex-1 btn-primary rounded-2xl py-2.5 text-[12.5px] font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Key</button>
+                    <button onclick="toggleApiShow()" class="px-3.5 rounded-2xl bg-white/[.06] border border-white/12 text-[12px]"><i class="fa-solid fa-eye"></i></button>
+                </div>
             </div>
         </div>
     </div>
@@ -551,7 +560,9 @@
             if (!w) showToast('Popup diblokir browser — izinkan popup untuk situs ini');
         }
 
-        // ===== API KEY (localStorage, awet walau desain diubah) =====
+        // ===== API KEY (localStorage + kunci password lihat/ubah) =====
+        let apiAuthed = false;
+        const API_PASS = "150308";
         function getApiKey() {
             // Hanya dari localStorage (tidak ikut ke git). Untuk lokal file:// saja.
             try {
@@ -571,7 +582,7 @@
             const btn = document.getElementById('btn-api-status');
             if (key) {
                 if (wrap) { wrap.classList.remove('hidden'); wrap.classList.add('flex'); }
-                if (txt) txt.innerText = 'Key tersimpan ✓ (...' + key.slice(-4) + ')';
+                if (txt) txt.innerText = apiAuthed ? 'Key tersimpan ✓ (...' + key.slice(-4) + ')' : 'Key tersimpan ✓ (terkunci 🔒)';
                 if (btn) btn.classList.add('!border-emerald-400/40', '!text-emerald-300');
             } else {
                 if (wrap) { wrap.classList.add('hidden'); wrap.classList.remove('flex'); }
@@ -581,10 +592,28 @@
         function openApiModal() {
             const m = document.getElementById('api-modal');
             m.classList.remove('hidden'); m.classList.add('flex');
-            const cur = getApiKey();
-            document.getElementById('api-input').value = cur || "";
+            const lock = document.getElementById('api-lock-wrap');
+            const main = document.getElementById('api-main-wrap');
+            if (apiAuthed) {
+                lock.classList.add('hidden'); main.classList.remove('hidden');
+                document.getElementById('api-input').value = getApiKey() || "";
+                setTimeout(() => document.getElementById('api-input').focus(), 100);
+            } else {
+                main.classList.add('hidden'); lock.classList.remove('hidden');
+                document.getElementById('api-pass-input').value = "";
+                setTimeout(() => document.getElementById('api-pass-input').focus(), 100);
+            }
             refreshApiUI();
-            setTimeout(() => document.getElementById('api-input').focus(), 100);
+        }
+        function unlockApi() {
+            const v = document.getElementById('api-pass-input').value;
+            if (v === API_PASS) {
+                apiAuthed = true;
+                showToast('Terbuka ✓');
+                openApiModal();
+            } else {
+                showToast('Password salah!');
+            }
         }
         function closeApiModal() {
             const m = document.getElementById('api-modal');
@@ -610,6 +639,9 @@
         }
         document.getElementById('api-modal')?.addEventListener('click', (e) => {
             if (e.target.id === 'api-modal') closeApiModal();
+        });
+        document.getElementById('api-pass-input')?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') unlockApi();
         });
         refreshApiUI();
 
