@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.GEMINI_API_KEY || "";
-const MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-flash-latest"];
+const MODELS = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-flash-latest", "gemini-2.5-flash"];
 
 app.disable("x-powered-by");
 app.use(cors({ origin: process.env.ALLOWED_ORIGIN?.split(",") || true }));
@@ -41,12 +41,16 @@ app.post("/api/chat", async (req, res) => {
     const tryModels = model ? [model, ...MODELS.filter((m) => m !== model)] : MODELS;
     let lastErr = "unknown", lastStatus = 502;
     for (const m of tryModels) {
+      const ac = new AbortController();
+      const to = setTimeout(() => ac.abort(), 20000);
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`;
       const r = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": API_KEY },
         body: JSON.stringify({ contents: [{ parts }] }),
+        signal: ac.signal,
       });
+      clearTimeout(to);
       const j = await r.json().catch(() => ({}));
       if (r.ok && j?.candidates?.[0]?.content?.parts?.[0]?.text) {
         return res.json({ text: j.candidates[0].content.parts[0].text, model: m, subject: subject || "" });

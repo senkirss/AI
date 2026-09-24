@@ -678,13 +678,32 @@
             ta.focus();
         }
 
+        // Kecilkan gambar (maks 1600px) biar upload + AI jauh lebih cepat
+        function shrinkImage(dataUrl, maxSide, quality) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    let w = img.width, h = img.height;
+                    const s = Math.min(1, maxSide / Math.max(w, h));
+                    w = Math.round(w * s); h = Math.round(h * s);
+                    const c = document.createElement("canvas");
+                    c.width = w; c.height = h;
+                    c.getContext("2d").drawImage(img, 0, 0, w, h);
+                    resolve(c.toDataURL("image/jpeg", quality));
+                };
+                img.onerror = function() { resolve(dataUrl); };
+                img.src = dataUrl;
+            });
+        }
+
         function previewImage(event) {
             const file = event.target.files[0];
             if (!file) return;
             if (file.size > 6 * 1024 * 1024) { showToast('Ukuran gambar maksimal 6MB'); return; }
             const reader = new FileReader();
-            reader.onload = function(e) {
-                base64Image = e.target.result.split(',')[1];
+            reader.onload = async function(e) {
+                const small = await shrinkImage(e.target.result, 1600, 0.8);
+                base64Image = small.split(',')[1];
                 document.getElementById('image-preview-thumb').src = e.target.result;
                 document.getElementById('file-name').innerText = file.name;
                 const pc = document.getElementById('preview-container');
@@ -703,11 +722,13 @@
                 await video.play();
                 await new Promise(r => setTimeout(r, 350));
                 const canvas = document.createElement("canvas");
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
+                let vw = video.videoWidth, vh = video.videoHeight;
+                const sc = Math.min(1, 1600 / Math.max(vw, vh));
+                canvas.width = Math.round(vw * sc);
+                canvas.height = Math.round(vh * sc);
                 canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
                 stream.getTracks().forEach(track => track.stop());
-                const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+                const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
                 base64Image = dataUrl.split(',')[1];
                 document.getElementById('image-preview-thumb').src = dataUrl;
                 document.getElementById('file-name').innerText = "Tangkapan Layar Otomatis";
@@ -776,23 +797,31 @@
             scrollChat();
             document.getElementById('status-text').innerText = 'Mengetik…';
 
-            const MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-flash-latest"];
+            const MODELS = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-flash-latest", "gemini-2.5-flash"];
             let parts = [];
             let instructionText = `Bertindaklah sebagai asisten akademis ahli dalam subjek (${selectedSubject}). Berikan jawaban terstruktur, ringkas, jelas, gunakan poin/heading dan contoh bila relevan, dalam Bahasa Indonesia. `;
             instructionText += userPrompt ? "\nPertanyaan/Instruksi Tambahan: " + userPrompt : "\nMohon analisis gambar/soal yang terlampir dan berikan jawaban serta langkah penyelesaiannya.";
             parts.push({ text: instructionText });
             if (base64Image) parts.push({ inlineData: { mimeType: "image/jpeg", data: base64Image } });
 
+            async function fetchTimeout(url, opts, ms) {
+                const c = new AbortController();
+                const t = setTimeout(() => c.abort(), ms || 22000);
+                try {
+                    return await fetch(url, { ...opts, signal: c.signal });
+                } finally { clearTimeout(t); }
+            }
+
             async function callModel(modelName) {
                 const activeKey = getApiKey();
                 // 1) Coba backend proxy dulu (key aman di server)
                 if (useProxy()) {
                     try {
-                        const rp = await fetch(PROXY_URL, {
+                        const rp = await fetchTimeout(PROXY_URL, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ parts, subject: selectedSubject, model: modelName })
-                        });
+                        }, 25000);
                         const jp = await rp.json().catch(() => ({}));
                         if (rp.ok && jp.text) return { ok: true, status: rp.status, result: { candidates: [{ content: { parts: [{ text: jp.text }] } }] }, model: jp.model || modelName };
                         // proxy error 501 = belum dikonfigurasi -> fallback direct
@@ -802,11 +831,11 @@
                 // 2) Fallback direct (butuh key lokal via 🔑)
                 if (!activeKey) return { ok: false, status: 401, result: { error: { message: 'Butuh API key lokal (klik 🔑) atau jalankan via server.' } }, model: modelName };
                 const u = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
-                const r = await fetch(u, {
+                const r = await fetchTimeout(u, {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "x-goog-api-key": activeKey },
                     body: JSON.stringify({ contents: [{ parts: parts }] })
-                });
+                }, 22000);
                 let j = null;
                 try { j = await r.json(); } catch(e) { j = {}; }
                 return { ok: r.ok, status: r.status, result: j, model: modelName };
@@ -848,7 +877,7 @@
                         lastErr = String(e && e.message || e);
                         lastStatus = 0;
                     }
-                    await new Promise(r => setTimeout(r, 700));
+                    await new Promise(r => setTimeout(r, 150));
                 }
                 if (!done) {
                     document.getElementById(typingId)?.remove();

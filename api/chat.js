@@ -1,5 +1,5 @@
 // Vercel Serverless Function — proxy aman Gemini (key di env, tidak di repo)
-const MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-flash-latest"];
+const MODELS = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-flash-latest", "gemini-2.5-flash"];
 const hits = new Map();
 
 export default async function handler(req, res) {
@@ -31,12 +31,16 @@ export default async function handler(req, res) {
   const tryModels = model ? [model, ...MODELS.filter((m) => m !== model)] : MODELS;
   let lastErr = "unknown", lastStatus = 502;
   for (const m of tryModels) {
+    const ac = new AbortController();
+    const to = setTimeout(() => ac.abort(), 20000);
     try {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": API_KEY },
         body: JSON.stringify({ contents: [{ parts }] }),
+        signal: ac.signal,
       });
+      clearTimeout(to);
       const j = await r.json().catch(() => ({}));
       if (r.ok && j?.candidates?.[0]?.content?.parts?.[0]?.text) {
         return res.status(200).json({ text: j.candidates[0].content.parts[0].text, model: m, subject: subject || "" });
