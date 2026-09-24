@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akutansi — AI Study Assistant</title>
+    <meta name="description" content="Asisten AI pintar untuk deteksi layar, scan soal, dan jawab tugas kuliah otomatis.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#030164',
+                            deep: '#060445',
+                            primary: '#4F46E5',
+                            violet: '#7C3AED',
+                            teal: '#2D7495',
+                            accent: '#4392B7',
+                            light: '#EBF3F6'
+                        }
+                    },
+                    fontFamily: {
+                        display: ['Sora', 'sans-serif'],
+                        body: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 40px -8px rgba(79,70,229,.55)',
+                        'card': '0 20px 60px -15px rgba(0,0,0,.6)',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .font-display { font-family: 'Sora', sans-serif; }
+
+        .bg-grid {
+            background-image:
+                linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+            background-size: 44px 44px;
+            mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, black 40%, transparent 100%);
+        }
+        .text-gradient {
+            background: linear-gradient(92deg, #fff 10%, #a5b4fc 45%, #22d3ee 90%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .glass-panel {
+            background: linear-gradient(180deg, rgba(18,16,80,.92), rgba(6,5,45,.96));
+            backdrop-filter: blur(22px) saturate(1.3);
+            -webkit-backdrop-filter: blur(22px) saturate(1.3);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#4F46E5,#06b6d4); border-radius: 99px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { scrollbar-width: none; }
+
+        @keyframes floatY { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-14px) } }
+        @keyframes floatY2 { 0%,100% { transform: translateY(0) rotate(-2deg) } 50% { transform: translateY(-10px) rotate(2deg) } }
+        @keyframes blob { 0%,100% { transform: translate(0,0) scale(1) } 33% { transform: translate(30px,-30px) scale(1.1) } 66% { transform: translate(-20px,20px) scale(.95) } }
+        @keyframes fadeUp { from { opacity:0; transform: translateY(18px) } to { opacity:1; transform: translateY(0) } }
+        @keyframes popIn { from { opacity:0; transform: translateY(16px) scale(.97) } to { opacity:1; transform: translateY(0) scale(1) } }
+        @keyframes pulseRing { 0% { transform: scale(1); opacity:.6 } 100% { transform: scale(1.9); opacity:0 } }
+        @keyframes typingDot { 0%,60%,100% { transform: translateY(0); opacity:.4 } 30% { transform: translateY(-4px); opacity:1 } }
+        @keyframes shimmer { 0% { background-position: -400px 0 } 100% { background-position: 400px 0 } }
+
+        .anim-fade-up { animation: fadeUp .8s cubic-bezier(.22,1,.36,1) both; }
+        .anim-pop { animation: popIn .35s cubic-bezier(.22,1,.36,1) both; }
+        .animate-float { animation: floatY 6s ease-in-out infinite; }
+        .animate-float-2 { animation: floatY2 7s ease-in-out infinite; }
+        .animate-blob { animation: blob 12s ease-in-out infinite; }
+        .delay-1 { animation-delay: .1s } .delay-2 { animation-delay: .2s } .delay-3 { animation-delay: .3s } .delay-4 { animation-delay: .45s }
+
+        .typing-dot { width:6px; height:6px; border-radius:99px; background:#22d3ee; animation: typingDot 1.2s infinite; }
+        .typing-dot:nth-child(2){ animation-delay:.15s } .typing-dot:nth-child(3){ animation-delay:.3s }
+
+        .subject-btn { transition: all .25s ease; white-space: nowrap; }
+        .subject-btn.active {
+            background: linear-gradient(135deg, #4F46E5, #7C3AED 60%, #06b6d4 130%) !important;
+            color: #fff !important;
+            border-color: rgba(255,255,255,.25) !important;
+            box-shadow: 0 6px 20px -6px rgba(124,58,237,.6);
+        }
+
+        .chat-ai {
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.09);
+            border-radius: 4px 18px 18px 18px;
+        }
+        .chat-user {
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+            border: 1px solid rgba(255,255,255,.18);
+            border-radius: 18px 18px 4px 18px;
+            box-shadow: 0 10px 28px -12px rgba(124,58,237,.7);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4F46E5, #7C3AED 55%, #0891b2 130%);
+            box-shadow: 0 12px 32px -10px rgba(124,58,237,.65), inset 0 1px 0 rgba(255,255,255,.25);
+            transition: all .25s ease;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 40px -10px rgba(124,58,237,.75), inset 0 1px 0 rgba(255,255,255,.3); filter: brightness(1.08); }
+        .btn-primary:active { transform: translateY(0) scale(.98); }
+
+        .card-hover { transition: all .35s cubic-bezier(.22,1,.36,1); }
+        .card-hover:hover { transform: translateY(-6px); border-color: rgba(139,92,246,.45) !important; box-shadow: 0 24px 60px -18px rgba(124,58,237,.45); }
+
+        #popup-window { transform-origin: bottom right; }
+        #popup-window:not(.hidden) { animation: popIn .32s cubic-bezier(.22,1,.36,1) both; }
+
+        #toast { transition: all .35s cubic-bezier(.22,1,.36,1); }
+    </style>
+</head>
+<body class="bg-[#020218] text-slate-100 min-h-screen font-body antialiased overflow-x-hidden selection:bg-violet-500/40">
+
+    <!-- ===== BACKGROUND DECOR ===== -->
+    <div class="fixed inset-0 -z-10 pointer-events-none">
+        <div class="absolute inset-0 bg-grid"></div>
+        <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[520px] rounded-full opacity-40 blur-[120px] animate-blob" style="background: radial-gradient(circle, #4F46E5 0%, #7C3AED 40%, transparent 70%)"></div>
+        <div class="absolute top-1/3 -left-40 w-[500px] h-[500px] rounded-full opacity-25 blur-[110px] animate-blob" style="background: radial-gradient(circle, #0891b2, transparent 70%); animation-delay:2s"></div>
+        <div class="absolute bottom-0 -right-40 w-[560px] h-[560px] rounded-full opacity-25 blur-[120px] animate-blob" style="background: radial-gradient(circle, #7C3AED, transparent 70%); animation-delay:4s"></div>
+        <div class="absolute inset-0" style="background: radial-gradient(ellipse 80% 55% at 50% -5%, rgba(124,58,237,.18), transparent 70%)"></div>
+    </div>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav class="max-w-6xl mx-auto px-5 pt-6 flex items-center justify-between anim-fade-up">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl btn-primary flex items-center justify-center text-lg">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <div class="leading-tight">
+                <p class="font-display font-800 font-extrabold tracking-tight text-[15px]">AKUTANSI</p>
+                <p class="text-[11px] text-slate-400 -mt-0.5">AI Study Assistant</p>
+            </div>
+        </div>
+        <div class="hidden md:flex items-center gap-7 text-[13px] text-slate-300">
+            <a href="#fitur" class="hover:text-white transition">Fitur</a>
+            <a href="#cara" class="hover:text-white transition">Cara Pakai</a>
+            <a href="#mode" class="hover:text-white transition">Mode Belajar</a>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-emerald-300 bg-emerald-400/10 border border-emerald-400/20 px-2.5 py-1 rounded-full">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online
+            </span>
+            <button onclick="togglePopup(true)" class="btn-primary text-[12px] font-semibold px-4 py-2 rounded-xl flex items-center gap-2">
+                <i class="fa-solid fa-robot text-[13px]"></i> Buka Asisten
+            </button>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <main class="max-w-6xl mx-auto px-5 pt-12 sm:pt-16 pb-10 grid lg:grid-cols-[1.05fr_.95fr] gap-10 items-center">
+        <!-- Left -->
+        <div>
+            <div class="anim-fade-up inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[.06] border border-white/10 text-[12px] text-slate-200 backdrop-blur">
+                <span class="relative flex w-2 h-2">
+                    <span class="absolute inline-flex w-full h-full rounded-full bg-cyan-400 opacity-75 animate-ping"></span>
+                    <span class="relative inline-flex w-2 h-2 rounded-full bg-cyan-400"></span>
+                </span>
+                <span class="font-medium">AI Assistant Akademik V2.0</span>
+                <span class="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-indigo-500 to-violet-500 text-[10px] font-bold">BARU</span>
+            </div>
+
+            <h1 class="anim-fade-up delay-1 font-display font-extrabold tracking-tight text-[34px] sm:text-[52px] leading-[1.05] mt-5">
+                Jawab Soal Kuliah<br>
+                <span class="text-gradient">Dari Layar, Sekali Klik.</span>
+            </h1>
+
+            <p class="anim-fade-up delay-2 text-slate-400 text-[14px] sm:text-[15px] leading-relaxed mt-4 max-w-lg">
+                Ketik pertanyaan, upload foto soal, atau tekan <b class="text-slate-200">Deteksi Layar</b> untuk menangkap tab ujian yang sedang terbuka. AI langsung memberi jawaban + langkah penyelesaian yang rapi.
+            </p>
+
+            <div class="anim-fade-up delay-3 flex flex-wrap gap-3 mt-7">
+                <button onclick="togglePopup(true)" class="btn-primary px-5 py-3 rounded-2xl text-[13px] font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Coba Sekarang — Gratis
+                </button>
+                <button onclick="detachWindow()" class="px-5 py-3 rounded-2xl text-[13px] font-semibold bg-white/[.06] hover:bg-white/[.1] border border-white/15 backdrop-blur transition flex items-center gap-2">
+                    <i class="fa-solid fa-up-right-from-square text-cyan-300"></i> Jendela Terpisah
+                </button>
+            </div>
+
+            <div class="anim-fade-up delay-4 flex items-center gap-6 mt-8 text-[12px]">
+                <div>
+                    <p class="font-display font-extrabold text-xl text-white">4 Mode</p>
+                    <p class="text-slate-500">Umum · MTK · IPA · Bahasa</p>
+                </div>
+                <div class="w-px h-9 bg-white/10"></div>
+                <div>
+                    <p class="font-display font-extrabold text-xl text-white">📸 Auto</p>
+                    <p class="text-slate-500">Screen capture 1-klik</p>
+                </div>
+                <div class="w-px h-9 bg-white/10"></div>
+                <div>
+                    <p class="font-display font-extrabold text-xl text-white">⚡ Cepat</p>
+                    <p class="text-slate-500">Gemini Flash</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right : interactive preview card -->
+        <div class="relative anim-fade-up delay-2 hidden sm:block">
+            <div class="absolute -inset-4 bg-gradient-to-tr from-indigo-600/25 via-violet-600/15 to-cyan-500/20 blur-2xl rounded-[28px]"></div>
+            <div class="relative rounded-[24px] border border-white/12 bg-[#0A0930]/80 backdrop-blur-xl shadow-card overflow-hidden animate-float">
+                <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/[.03]">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-400/90"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-300/90"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400/90"></span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-lock text-[10px]"></i> tab-ujian.ac.id</p>
+                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-400/10 border border-cyan-400/25 text-cyan-300 font-semibold">LIVE</span>
+                </div>
+                <div class="p-4 space-y-3">
+                    <div class="rounded-2xl border border-white/10 bg-white/[.04] p-3.5">
+                        <p class="text-[11px] font-bold text-slate-300 mb-1.5">Soal No. 3 — Akuntansi Keuangan</p>
+                        <p class="text-[12px] text-slate-400 leading-relaxed">Hitung beban penyusutan mesin Rp120 jt, umur 5 tahun, metode garis lurus. Berapa beban per tahun…</p>
+                        <div class="mt-3 rounded-xl overflow-hidden border border-white/10 bg-gradient-to-br from-indigo-600/30 to-cyan-500/20 h-[86px] flex items-center justify-center">
+                            <i class="fa-regular fa-image text-2xl text-white/30"></i>
+                        </div>
+                    </div>
+                    <div class="chat-user p-3 text-[12px] leading-relaxed ml-8">
+                        📸 Tangkapan layar terlampir — tolong selesaikan + langkahnya ya
+                    </div>
+                    <div class="chat-ai p-3 text-[12px] leading-relaxed mr-6">
+                        <span class="text-cyan-300 font-bold flex items-center gap-1.5 mb-1"><i class="fa-solid fa-robot"></i> AI Assistant <i class="fa-solid fa-circle-check text-emerald-400 text-[11px]"></i></span>
+                        <span class="text-slate-200"><b>Beban penyusutan = Rp24.000.000/tahun.</b> Perhitungan: 120jt ÷ 5 tahun…</span>
+                        <div class="flex gap-1.5 mt-2.5">
+                            <span class="text-[10px] px-2 py-1 rounded-lg bg-white/[.07] border border-white/10">📋 Salin</span>
+                            <span class="text-[10px] px-2 py-1 rounded-lg bg-white/[.07] border border-white/10">🔁 Jelaskan lagi</span>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="togglePopup(true)" class="w-full py-3 text-[12px] font-bold bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-600 hover:brightness-110 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-expand"></i> Deteksi Layar Tab Ini
+                </button>
+            </div>
+
+            <div class="absolute -left-6 top-10 animate-float-2 rounded-2xl px-3 py-2 bg-[#0c0b3d]/90 border border-white/15 backdrop-blur shadow-card flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-emerald-400/15 border border-emerald-400/25 flex items-center justify-center text-emerald-300"><i class="fa-solid fa-check"></i></span>
+                <div class="leading-tight"><p class="text-[11px] font-bold">Jawaban siap</p><p class="text-[10px] text-slate-400">± 3 detik</p></div>
+            </div>
+            <div class="absolute -right-4 bottom-16 animate-float-2 rounded-2xl px-3 py-2 bg-[#0c0b3d]/90 border border-white/15 backdrop-blur shadow-card flex items-center gap-2" style="animation-delay:1.2s">
+                <span class="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-400/25 flex items-center justify-center text-violet-300"><i class="fa-solid fa-camera"></i></span>
+                <div class="leading-tight"><p class="text-[11px] font-bold">Screenshot OK</p><p class="text-[10px] text-slate-400">Auto terlampir</p></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===== FEATURES ===== -->
+    <section id="fitur" class="max-w-6xl mx-auto px-5 pb-4 grid sm:grid-cols-3 gap-4">
+        <div class="card-hover rounded-3xl p-5 bg-white/[.04] border border-white/10 backdrop-blur anim-fade-up">
+            <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-lg mb-4 bg-cyan-400/10 border border-cyan-400/25 text-cyan-300"><i class="fa-solid fa-desktop"></i></div>
+            <h3 class="font-display font-bold text-[15px]">Deteksi Layar Otomatis</h3>
+            <p class="text-[12.5px] text-slate-400 leading-relaxed mt-1.5">Tangkap tab soal/ujian yang sedang terbuka tanpa download. Satu frame langsung dianalisis AI.</p>
+        </div>
+        <div class="card-hover rounded-3xl p-5 bg-white/[.04] border border-white/10 backdrop-blur anim-fade-up delay-1">
+            <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-lg mb-4 bg-violet-500/10 border border-violet-400/25 text-violet-300"><i class="fa-solid fa-image"></i></div>
+            <h3 class="font-display font-bold text-[15px]">Scan Foto & Upload</h3>
+            <p class="text-[12.5px] text-slate-400 leading-relaxed mt-1.5">Foto soal tulisan tangan, tabel akuntansi, atau diagram — AI membaca gambar dan menjawab terstruktur.</p>
+        </div>
+        <div class="card-hover rounded-3xl p-5 bg-white/[.04] border border-white/10 backdrop-blur anim-fade-up delay-2">
+            <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-lg mb-4 bg-indigo-500/10 border border-indigo-400/25 text-indigo-300"><i class="fa-solid fa-layer-group"></i></div>
+            <h3 id="mode" class="font-display font-bold text-[15px]">4 Mode Ahli Subjek</h3>
+            <p class="text-[12.5px] text-slate-400 leading-relaxed mt-1.5">Umum/Kuliah, Matematika, IPA/Sains, dan Bahasa — gaya jawaban menyesuaikan tiap mata kuliah.</p>
+        </div>
+    </section>
+
+    <!-- ===== STEPS ===== -->
+    <section id="cara" class="max-w-6xl mx-auto px-5 py-8">
+        <div class="rounded-[28px] border border-white/10 bg-gradient-to-b from-white/[.06] to-white/[.02] backdrop-blur p-6 sm:p-8 relative overflow-hidden">
+            <div class="absolute -top-24 right-0 w-[380px] h-[280px] rounded-full blur-[90px] opacity-30 pointer-events-none" style="background: radial-gradient(circle,#7C3AED,transparent 70%)"></div>
+            <p class="text-[11px] font-bold tracking-[.2em] text-cyan-300">CARA PAKAI</p>
+            <h2 class="font-display font-extrabold text-xl sm:text-2xl mt-1.5 tracking-tight">Dari soal ke jawaban dalam 3 langkah</h2>
+            <div class="grid sm:grid-cols-3 gap-4 mt-6">
+                <div class="flex gap-3">
+                    <span class="shrink-0 w-9 h-9 rounded-xl btn-primary font-display font-extrabold flex items-center justify-center text-[14px]">1</span>
+                    <div><p class="font-bold text-[13px]">Ambil soal</p><p class="text-[12px] text-slate-400 mt-0.5 leading-relaxed">Klik tombol robot → <b>Deteksi Layar</b> atau <b>Upload Foto</b>.</p></div>
+                </div>
+                <div class="flex gap-3">
+                    <span class="shrink-0 w-9 h-9 rounded-xl btn-primary font-display font-extrabold flex items-center justify-center text-[14px]">2</span>
+                    <div><p class="font-bold text-[13px]">Pilih mode & instruksi</p><p class="text-[12px] text-slate-400 mt-0.5 leading-relaxed">Pilih mode mapel, tambahkan pertanyaan bila perlu.</p></div>
+                </div>
+                <div class="flex gap-3">
+                    <span class="shrink-0 w-9 h-9 rounded-xl btn-primary font-display font-extrabold flex items-center justify-center text-[14px]">3</span>
+                    <div><p class="font-bold text-[13px]">Terima & salin jawaban</p><p class="text-[12px] text-slate-400 mt-0.5 leading-relaxed">Tekan Kirim / Enter, lalu salin jawaban AI ke tugasmu.</p></div>
+                </div>
+            </div>
+            <div class="mt-6 flex flex-wrap items-center gap-3 rounded-2xl bg-amber-300/[.07] border border-amber-300/20 px-4 py-3">
+                <i class="fa-solid fa-key text-amber-300"></i>
+                <p class="text-[12px] text-slate-300">Klik ikon <b>🔑</b> di header chat untuk tempel <b>Gemini API Key gratis</b> dari <span class="text-cyan-300 font-semibold">aistudio.google.com</span> — otomatis tersimpan di browser, tidak hilang saat desain diubah.</p>
+            </div>
+        </div>
+        <p class="text-center text-[11px] text-slate-600 mt-8">© 2026 Akutansi · Dibuat untuk membantu belajar lebih cepat ✨</p>
+        <div class="h-24"></div>
+    </section>
+
+    <!-- ===== FLOATING BUTTON ===== -->
+    <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+        <div id="fab-tip" class="anim-pop mr-1 px-3 py-2 rounded-2xl rounded-br-md bg-white text-slate-900 text-[12px] font-semibold shadow-card flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Hai! Butuh bantuan soal? Klik aku 👇
+            <button onclick="document.getElementById('fab-tip').style.display='none'" class="text-slate-400 hover:text-slate-700 ml-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <button id="floating-btn" onclick="togglePopup()" aria-label="Buka AI Assistant" class="relative group w-[62px] h-[62px] rounded-full btn-primary flex items-center justify-center text-[22px]">
+            <span class="absolute inset-0 rounded-full bg-violet-500" style="animation: pulseRing 2s ease-out infinite"></span>
+            <span class="absolute inset-0 rounded-full bg-violet-500/60" style="animation: pulseRing 2s ease-out infinite; animation-delay:1s"></span>
+            <span id="fab-icon-open" class="relative"><i class="fa-solid fa-robot"></i></span>
+            <span id="fab-icon-close" class="relative hidden"><i class="fa-solid fa-xmark"></i></span>
+            <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-400 border-[3px] border-[#020218]"></span>
+        </button>
+    </div>
+
+    <!-- ===== POPUP WINDOW ===== -->
+    <div id="popup-window" class="fixed bottom-[100px] right-4 sm:right-6 w-[420px] max-w-[94vw] h-[640px] max-h-[84vh] glass-panel border border-white/15 rounded-[24px] shadow-card z-50 hidden flex-col overflow-hidden">
+
+        <!-- Header -->
+        <div class="relative px-4 pt-4 pb-3.5 border-b border-white/10 bg-gradient-to-r from-indigo-600/25 via-violet-600/15 to-cyan-500/15">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <div class="w-11 h-11 rounded-2xl btn-primary flex items-center justify-center text-lg"><i class="fa-solid fa-robot"></i></div>
+                        <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#0a0930]"></span>
+                    </div>
+                    <div class="leading-tight">
+                        <h3 class="font-display font-extrabold text-[13px] tracking-tight flex items-center gap-1.5">AI STUDY ASSISTANT <i class="fa-solid fa-circle-check text-cyan-300 text-[12px]"></i></h3>
+                        <p class="text-[11px] text-slate-300/90 flex items-center gap-1.5 mt-0.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span id="status-text">Online · Auto Screen & Image Solver</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button onclick="openApiModal()" title="Setting API Key" id="btn-api-status" class="w-8 h-8 rounded-xl bg-white/[.06] hover:bg-white/[.12] border border-white/10 text-slate-300 hover:text-white text-[12px] transition flex items-center justify-center">
+                        <i class="fa-solid fa-key"></i>
+                    </button>
+                    <button onclick="detachWindow()" title="Buka di jendela terpisah" class="w-8 h-8 rounded-xl bg-white/[.06] hover:bg-white/[.12] border border-white/10 text-slate-300 hover:text-white text-[12px] transition flex items-center justify-center">
+                        <i class="fa-solid fa-up-right-from-square"></i>
+                    </button>
+                    <button onclick="togglePopup()" title="Tutup (Esc)" class="w-8 h-8 rounded-xl bg-white/[.06] hover:bg-rose-500/80 border border-white/10 text-slate-300 hover:text-white text-[14px] transition flex items-center justify-center">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Mode pills -->
+            <div class="flex items-center gap-1.5 mt-3 overflow-x-auto no-scrollbar py-0.5">
+                <span class="text-[10px] font-bold tracking-widest text-slate-400 shrink-0 mr-0.5">MODE</span>
+                <button onclick="setSubject('Umum', this)" class="subject-btn active text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white/[.07] border border-white/12 text-slate-200">🎓 Umum</button>
+                <button onclick="setSubject('Matematika', this)" class="subject-btn text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white/[.07] border border-white/12 text-slate-200">📐 Matematika</button>
+                <button onclick="setSubject('IPA', this)" class="subject-btn text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white/[.07] border border-white/12 text-slate-200">🔬 IPA</button>
+                <button onclick="setSubject('Bahasa', this)" class="subject-btn text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white/[.07] border border-white/12 text-slate-200">💬 Bahasa</button>
+            </div>
+        </div>
+
+        <!-- Chat -->
+        <div id="chat-container" class="flex-1 p-4 overflow-y-auto space-y-3.5 text-[12.5px] custom-scrollbar">
+            <div class="rounded-2xl p-[1px] bg-gradient-to-br from-indigo-500/60 via-violet-500/30 to-cyan-400/50">
+                <div class="rounded-2xl bg-[#0c0b3d]/95 p-3.5">
+                    <span class="font-bold text-white flex items-center gap-2 mb-1.5"><span class="w-7 h-7 rounded-xl btn-primary flex items-center justify-center text-[13px]"><i class="fa-solid fa-sparkles"></i></span> Halo, selamat datang! 👋</span>
+                    <p class="text-slate-300 leading-relaxed text-[12px]">
+                        Ketik pertanyaan, upload foto soal, atau tekan <b class="text-cyan-300">📸 Deteksi Layar</b> untuk menangkap tab ujian yang sedang terbuka secara otomatis.
+                    </p>
+                    <div class="flex flex-wrap gap-1.5 mt-2.5">
+                        <button onclick="isiContoh('Jelaskan jawaban soal ini langkah per langkah ya')" class="text-[10.5px] px-2.5 py-1.5 rounded-full bg-white/[.07] hover:bg-white/[.12] border border-white/10 transition">📝 Jelaskan langkahnya</button>
+                        <button onclick="isiContoh('Buatkan ringkasan materi dari gambar ini')" class="text-[10.5px] px-2.5 py-1.5 rounded-full bg-white/[.07] hover:bg-white/[.12] border border-white/10 transition">📚 Ringkas materi</button>
+                        <button onclick="tangkapLayar()" class="text-[10.5px] px-2.5 py-1.5 rounded-full bg-cyan-400/10 hover:bg-cyan-400/20 border border-cyan-400/25 text-cyan-200 transition">📸 Coba deteksi layar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div id="preview-container" class="mx-3 mb-2 hidden items-center justify-between gap-2 rounded-2xl px-3 py-2 bg-cyan-400/[.08] border border-cyan-400/25">
+            <div class="flex items-center gap-2.5 overflow-hidden">
+                <img id="image-preview-thumb" class="w-10 h-10 object-cover rounded-xl border border-cyan-300/40" src="" alt="preview">
+                <div class="leading-tight overflow-hidden">
+                    <p class="text-[10px] font-bold tracking-widest text-cyan-300">GAMBAR TERLAMPIR</p>
+                    <span id="file-name" class="text-[11px] text-slate-200 truncate block max-w-[220px]">Tangkapan Layar</span>
+                </div>
+            </div>
+            <button onclick="hapusGambar()" class="shrink-0 text-[11px] font-semibold text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-400/25 px-2.5 py-1.5 rounded-xl transition">
+                <i class="fa-solid fa-trash"></i> Hapus
+            </button>
+        </div>
+
+        <!-- Input -->
+        <div class="p-3 pt-1">
+            <div class="rounded-[20px] border border-white/12 bg-black/30 backdrop-blur p-2.5 space-y-2.5">
+                <div class="flex items-center gap-2">
+                    <button onclick="tangkapLayar()" title="Tangkap tab/browser aktif" class="flex-1 bg-cyan-400/10 hover:bg-cyan-400/20 border border-cyan-400/30 text-cyan-200 py-2 px-2 rounded-xl text-[11.5px] font-bold transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-camera"></i><span>📸 Deteksi Layar</span>
+                    </button>
+                    <label class="flex-1 cursor-pointer bg-white/[.06] hover:bg-white/[.1] border border-white/15 text-slate-200 py-2 px-2 rounded-xl text-[11.5px] font-bold transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-image text-violet-300"></i><span>📁 Upload Foto</span>
+                        <input type="file" id="image-input" accept="image/*" class="hidden" onchange="previewImage(event)">
+                    </label>
+                </div>
+                <div class="relative">
+                    <textarea id="prompt_user" rows="2" class="w-full bg-white/[.05] border border-white/10 p-3 pr-[52px] rounded-2xl text-[12.5px] text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-violet-500/60 focus:border-violet-400/50 focus:outline-none custom-scrollbar resize-none leading-relaxed" placeholder="Tulis pertanyaan… (Enter = kirim, Shift+Enter = baris baru)"></textarea>
+                    <button onclick="kirimPesan()" id="btn-kirim" title="Kirim" class="absolute bottom-2 right-2 w-10 h-10 rounded-2xl btn-primary text-white text-[14px] transition flex items-center justify-center">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+            <p class="text-center text-[10px] text-slate-500 mt-2">AI bisa keliru — selalu cek ulang jawaban penting ✨</p>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 translate-y-24 opacity-0 z-[70] px-4 py-2.5 rounded-2xl bg-white text-slate-900 text-[12.5px] font-semibold shadow-card flex items-center gap-2 max-w-[92vw]">
+        <i class="fa-solid fa-circle-check text-emerald-500"></i><span id="toast-msg">Berhasil</span>
+    </div>
+
+    <!-- Modal API Key -->
+    <div id="api-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="anim-pop w-full max-w-[380px] rounded-3xl border border-white/15 bg-[#0c0b3d] p-5 shadow-card">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="font-display font-extrabold text-[15px] flex items-center gap-2"><i class="fa-solid fa-key text-amber-300"></i> API Key Gemini</h3>
+                <button onclick="closeApiModal()" class="w-8 h-8 rounded-xl bg-white/[.06] hover:bg-white/[.12] text-slate-300 text-[14px]"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-[12px] text-slate-400 leading-relaxed">Tempel API key dari <b class="text-cyan-300">aistudio.google.com</b> → Get API Key. Key tersimpan otomatis di browser ini (localStorage), jadi aman dari ke-reset saat desain diubah.</p>
+            <div id="api-current-wrap" class="mt-3 hidden items-center justify-between gap-2 rounded-xl px-3 py-2 bg-emerald-400/10 border border-emerald-400/25 text-[11.5px]">
+                <span class="text-emerald-200 font-semibold flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i><span id="api-current-text">Key tersimpan ✓</span></span>
+                <button onclick="hapusApiKey()" class="text-rose-300 hover:text-rose-200 font-semibold">Hapus</button>
+            </div>
+            <input id="api-input" type="password" placeholder="Tempel AIza… key kamu di sini" class="mt-3 w-full bg-black/40 border border-white/15 rounded-2xl px-3.5 py-2.5 text-[12.5px] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/60">
+            <div class="flex gap-2 mt-3">
+                <button onclick="saveApiKey()" class="flex-1 btn-primary rounded-2xl py-2.5 text-[12.5px] font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Key</button>
+                <button onclick="toggleApiShow()" class="px-3.5 rounded-2xl bg-white/[.06] border border-white/12 text-[12px]"><i class="fa-solid fa-eye"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // AMAN: tidak ada key di frontend. Key hanya di server (env GEMINI_API_KEY).
+        // Lokal (file://) bisa isi via tombol 🔑 -> tersimpan di localStorage saja, tidak ikut ke git.
+        const API_KEY = "";
+        const PROXY_URL = "/api/chat";
+
+        let base64Image = null;
+        let selectedSubject = "Umum";
+        let isOpen = false;
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            t.classList.remove('translate-y-24', 'opacity-0');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => t.classList.add('translate-y-24', 'opacity-0'), 2200);
+        }
+
+        function togglePopup(forceOpen) {
+            const popup = document.getElementById('popup-window');
+            const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : popup.classList.contains('hidden');
+            isOpen = shouldOpen;
+            if (shouldOpen) {
+                popup.classList.remove('hidden');
+                popup.classList.add('flex');
+                const tip = document.getElementById('fab-tip');
+                if (tip) tip.style.display = 'none';
+                setTimeout(() => document.getElementById('prompt_user').focus(), 150);
+            } else {
+                popup.classList.add('hidden');
+                popup.classList.remove('flex');
+            }
+            document.getElementById('fab-icon-open').classList.toggle('hidden', shouldOpen);
+            document.getElementById('fab-icon-close').classList.toggle('hidden', !shouldOpen);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isOpen) togglePopup(false);
+        });
+
+        function detachWindow() {
+            window.open(window.location.href, 'AIStudyAssistantWindow', 'width=440,height=680,resizable=yes,scrollbars=yes,status=no');
+        }
+
+        // ===== API KEY (localStorage, awet walau desain diubah) =====
+        function getApiKey() {
+            // Hanya dari localStorage (tidak ikut ke git). Untuk lokal file:// saja.
+            try {
+                const saved = localStorage.getItem('gemini_api_key');
+                if (saved && saved.trim().length > 10) return saved.trim();
+            } catch(e) {}
+            return "";
+        }
+        function useProxy() {
+            // Pakai proxy bila dijalankan via http(s) (node/vercel), bukan file://
+            return location.protocol.startsWith('http');
+        }
+        function refreshApiUI() {
+            const key = getApiKey();
+            const wrap = document.getElementById('api-current-wrap');
+            const txt = document.getElementById('api-current-text');
+            const btn = document.getElementById('btn-api-status');
+            if (key) {
+                if (wrap) { wrap.classList.remove('hidden'); wrap.classList.add('flex'); }
+                if (txt) txt.innerText = 'Key tersimpan ✓ (...' + key.slice(-4) + ')';
+                if (btn) btn.classList.add('!border-emerald-400/40', '!text-emerald-300');
+            } else {
+                if (wrap) { wrap.classList.add('hidden'); wrap.classList.remove('flex'); }
+                if (btn) btn.classList.remove('!border-emerald-400/40', '!text-emerald-300');
+            }
+        }
+        function openApiModal() {
+            const m = document.getElementById('api-modal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+            const cur = getApiKey();
+            document.getElementById('api-input').value = cur || "";
+            refreshApiUI();
+            setTimeout(() => document.getElementById('api-input').focus(), 100);
+        }
+        function closeApiModal() {
+            const m = document.getElementById('api-modal');
+            m.classList.add('hidden'); m.classList.remove('flex');
+        }
+        function toggleApiShow() {
+            const i = document.getElementById('api-input');
+            i.type = i.type === 'password' ? 'text' : 'password';
+        }
+        function saveApiKey() {
+            const v = document.getElementById('api-input').value.trim();
+            if (v.length < 10) { showToast('Key tidak valid, cek lagi ya'); return; }
+            try { localStorage.setItem('gemini_api_key', v); } catch(e) {}
+            refreshApiUI();
+            closeApiModal();
+            showToast('API Key tersimpan ✓');
+        }
+        function hapusApiKey() {
+            try { localStorage.removeItem('gemini_api_key'); } catch(e) {}
+            document.getElementById('api-input').value = "";
+            refreshApiUI();
+            showToast('API Key dihapus');
+        }
+        document.getElementById('api-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'api-modal') closeApiModal();
+        });
+        refreshApiUI();
+
+        function setSubject(subject, el) {
+            selectedSubject = subject;
+            const btn = el || (window.event && window.event.target && window.event.target.closest('.subject-btn'));
+            if (!btn) return;
+            document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            showToast('Mode: ' + subject);
+        }
+
+        function isiContoh(teks) {
+            const ta = document.getElementById('prompt_user');
+            ta.value = teks;
+            ta.focus();
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (file.size > 6 * 1024 * 1024) { showToast('Ukuran gambar maksimal 6MB'); return; }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                base64Image = e.target.result.split(',')[1];
+                document.getElementById('image-preview-thumb').src = e.target.result;
+                document.getElementById('file-name').innerText = file.name;
+                const pc = document.getElementById('preview-container');
+                pc.classList.remove('hidden'); pc.classList.add('flex');
+                showToast('Gambar terlampir ✓');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function tangkapLayar() {
+            try {
+                showToast('Pilih tab/jendela yang mau ditangkap…');
+                const stream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: "screen" } });
+                const video = document.createElement("video");
+                video.srcObject = stream;
+                await video.play();
+                await new Promise(r => setTimeout(r, 350));
+                const canvas = document.createElement("canvas");
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+                stream.getTracks().forEach(track => track.stop());
+                const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+                base64Image = dataUrl.split(',')[1];
+                document.getElementById('image-preview-thumb').src = dataUrl;
+                document.getElementById('file-name').innerText = "Tangkapan Layar Otomatis";
+                const pc = document.getElementById('preview-container');
+                pc.classList.remove('hidden'); pc.classList.add('flex');
+                if (!isOpen) togglePopup(true);
+                showToast('Layar berhasil ditangkap ✓');
+            } catch (err) {
+                console.error("Gagal menangkap layar:", err);
+                showToast('Pengambilan layar dibatalkan');
+            }
+        }
+
+        function hapusGambar() {
+            base64Image = null;
+            document.getElementById('image-input').value = "";
+            const pc = document.getElementById('preview-container');
+            pc.classList.remove('flex'); pc.classList.add('hidden');
+        }
+
+        function scrollChat() {
+            const c = document.getElementById('chat-container');
+            c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' });
+        }
+
+        function timeNow() {
+            return new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        async function kirimPesan() {
+            const promptInput = document.getElementById('prompt_user');
+            const userPrompt = promptInput.value.trim();
+            const container = document.getElementById('chat-container');
+            const btn = document.getElementById('btn-kirim');
+
+            if (!userPrompt && !base64Image) { showToast('Ketik pertanyaan atau lampirkan gambar dulu'); return; }
+            // Batasi panjang input biar tidak disalahgunakan / spam token
+            if (userPrompt.length > 4000) { showToast('Pertanyaan terlalu panjang (maks 4000 karakter)'); return; }
+            if (base64Image && base64Image.length > 5 * 1024 * 1024) { showToast('Gambar terlalu besar'); return; }
+
+            let userHtml = `
+                <div class="anim-pop flex justify-end">
+                    <div class="chat-user p-3 max-w-[85%] leading-relaxed">
+                        <div class="flex items-center justify-between gap-3 mb-1">
+                            <span class="font-bold text-white/95 text-[11px]">Anda</span>
+                            <span class="text-[10px] text-white/60">${timeNow()}</span>
+                        </div>`;
+            if (base64Image) userHtml += `<span class="inline-flex items-center gap-1 text-[10.5px] bg-black/25 border border-white/15 px-2 py-1 rounded-lg mb-1.5"><i class="fa-solid fa-image"></i> Gambar terlampir</span><br>`;
+            if (userPrompt) userHtml += `<span class="text-white text-[12.5px]">${escapeHtml(userPrompt)}</span>`;
+            userHtml += `</div></div>`;
+            container.innerHTML += userHtml;
+
+            promptInput.value = "";
+            promptInput.style.height = 'auto';
+            scrollChat();
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i>`;
+
+            const typingId = 'typing-' + Date.now();
+            container.innerHTML += `
+                <div id="${typingId}" class="anim-pop flex gap-2.5">
+                    <div class="shrink-0 w-8 h-8 rounded-xl btn-primary flex items-center justify-center text-[13px]"><i class="fa-solid fa-robot"></i></div>
+                    <div class="chat-ai px-4 py-3 flex items-center gap-1.5"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
+                </div>`;
+            scrollChat();
+            document.getElementById('status-text').innerText = 'Mengetik…';
+
+            const MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-flash-latest"];
+            let parts = [];
+            let instructionText = `Bertindaklah sebagai asisten akademis ahli dalam subjek (${selectedSubject}). Berikan jawaban terstruktur, ringkas, jelas, gunakan poin/heading dan contoh bila relevan, dalam Bahasa Indonesia. `;
+            instructionText += userPrompt ? "\nPertanyaan/Instruksi Tambahan: " + userPrompt : "\nMohon analisis gambar/soal yang terlampir dan berikan jawaban serta langkah penyelesaiannya.";
+            parts.push({ text: instructionText });
+            if (base64Image) parts.push({ inlineData: { mimeType: "image/jpeg", data: base64Image } });
+
+            async function callModel(modelName) {
+                const activeKey = getApiKey();
+                // 1) Coba backend proxy dulu (key aman di server)
+                if (useProxy()) {
+                    try {
+                        const rp = await fetch(PROXY_URL, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ parts, subject: selectedSubject, model: modelName })
+                        });
+                        const jp = await rp.json().catch(() => ({}));
+                        if (rp.ok && jp.text) return { ok: true, status: rp.status, result: { candidates: [{ content: { parts: [{ text: jp.text }] } }] }, model: jp.model || modelName };
+                        // proxy error 501 = belum dikonfigurasi -> fallback direct
+                        if (rp.status === 401 || rp.status === 403 || rp.status === 400) return { ok: false, status: rp.status, result: jp, model: modelName };
+                    } catch(e) { /* fallback ke direct */ }
+                }
+                // 2) Fallback direct (butuh key lokal via 🔑)
+                if (!activeKey) return { ok: false, status: 401, result: { error: { message: 'Butuh API key lokal (klik 🔑) atau jalankan via server.' } }, model: modelName };
+                const u = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+                const r = await fetch(u, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "x-goog-api-key": activeKey },
+                    body: JSON.stringify({ contents: [{ parts: parts }] })
+                });
+                let j = null;
+                try { j = await r.json(); } catch(e) { j = {}; }
+                return { ok: r.ok, status: r.status, result: j, model: modelName };
+            }
+
+            try {
+                let lastErr = null, lastStatus = 0, done = false;
+                document.getElementById('status-text').innerText = 'Menghubungi AI…';
+                for (const m of MODELS) {
+                    document.getElementById('status-text').innerText = 'Mencoba ' + m + '…';
+                    try {
+                        const { ok, status, result } = await callModel(m);
+                        if (ok && result.candidates && result.candidates[0].content) {
+                            document.getElementById(typingId)?.remove();
+                            const aiResponse = result.candidates[0].content.parts[0].text;
+                            const msgId = 'ai-msg-' + Date.now();
+                            container.innerHTML += `
+                        <div class="anim-pop flex gap-2.5">
+                            <div class="shrink-0 w-8 h-8 rounded-xl btn-primary flex items-center justify-center text-[13px]"><i class="fa-solid fa-robot"></i></div>
+                            <div class="chat-ai p-3 max-w-[88%] leading-relaxed">
+                                <div class="flex items-center justify-between gap-2 mb-1.5">
+                                    <span class="font-bold text-cyan-300 text-[11px]">AI Assistant · ${escapeHtml(selectedSubject)} · ${escapeHtml(m)}</span>
+                                    <button onclick="copyToClipboard('${msgId}', this)" class="shrink-0 text-[10px] font-semibold text-slate-300 hover:text-white bg-white/[.07] hover:bg-white/[.14] px-2 py-1 rounded-lg border border-white/10 transition">
+                                        <i class="fa-solid fa-copy"></i> Salin
+                                    </button>
+                                </div>
+                                <div id="${msgId}" class="whitespace-pre-line text-slate-200 text-[12px] leading-relaxed">${escapeHtml(aiResponse)}</div>
+                                <p class="text-[10px] text-slate-500 mt-1.5">${timeNow()}</p>
+                            </div>
+                        </div>`;
+                            done = true;
+                            break;
+                        }
+                        lastErr = result?.error?.message || ('HTTP ' + status);
+                        lastStatus = status;
+                        // 503/500/429/404-model = coba model berikutnya; 400/401/403 = key salah, stop
+                        if (status === 400 || status === 401 || status === 403) break;
+                    } catch (e) {
+                        lastErr = String(e && e.message || e);
+                        lastStatus = 0;
+                    }
+                    await new Promise(r => setTimeout(r, 700));
+                }
+                if (!done) {
+                    document.getElementById(typingId)?.remove();
+                    console.error(lastErr);
+                    const retryHint = (lastStatus === 503 || lastStatus === 429 || lastStatus === 500) ? 'Server Google sedang penuh — otomatis dicoba 4 model, coba lagi 1-2 menit.' : 'Jika 401/403, buat key baru di AI Studio / cek restriksi.';
+                    container.innerHTML += `<div class="anim-pop rounded-2xl bg-rose-500/10 border border-rose-400/25 p-3 text-rose-200 text-[12px]">⚠️ API Error (${lastStatus}): ${escapeHtml(String(lastErr).slice(0,400))}<br><span class="text-[11px] text-rose-300/70">${retryHint}</span></div>`;
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById(typingId)?.remove();
+                container.innerHTML += `<div class="anim-pop rounded-2xl bg-rose-500/10 border border-rose-400/25 p-3 text-rose-200 text-[12px]">⚠️ Koneksi bermasalah. Cek internet lalu coba lagi.</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i>`;
+                document.getElementById('status-text').innerText = 'Online · Auto Screen & Image Solver';
+                hapusGambar();
+                scrollChat();
+            }
+        }
+
+        function copyToClipboard(elementId, btnEl) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Jawaban disalin ✓');
+                if (btnEl) {
+                    const old = btnEl.innerHTML;
+                    btnEl.innerHTML = `<i class="fa-solid fa-check text-emerald-300"></i> Disalin`;
+                    setTimeout(() => btnEl.innerHTML = old, 1600);
+                }
+            }).catch(() => showToast('Gagal menyalin'));
+        }
+
+        function escapeHtml(text) {
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        // Enter untuk kirim, Shift+Enter baris baru
+        document.getElementById('prompt_user').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); kirimPesan(); }
+        });
+
+        // Sembunyikan tooltip otomatis
+        setTimeout(() => {
+            const tip = document.getElementById('fab-tip');
+            if (tip && isOpen === false) { tip.style.opacity = '0'; tip.style.transform = 'translateY(8px)'; setTimeout(()=> tip.style.display='none', 400); }
+        }, 6000);
+    </script>
+</body>
+</html>
